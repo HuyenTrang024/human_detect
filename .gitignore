@@ -1,0 +1,65 @@
+# =============================================================================
+# .gitignore cho du an Human Detection / Gesture (ROS 2 Jazzy)
+# Nguyen tac: chi dua CODE + CONFIG + MODEL CUOI CUNG len git.
+#             Du lieu train, file sinh ra khi build/chay, moi truong ao -> bo qua.
+# =============================================================================
+
+# ----- ROS 2 / colcon: sinh ra khi build va chay -----
+build/
+install/
+log/
+COLCON_IGNORE
+
+# Ban ghi rosbag (thuong rat nang)
+rosbag2_*/
+*.db3
+*.mcap
+*.bag
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# ----- Moi truong ao (tao lai bang setup_venv.sh, khong copy duoc giua cac may) -----
+venv/
+.venv/
+*_venv/
+env/
+
+# ----- Du lieu train va file sinh ra khi train (rat nang, khong can cho robot) -----
+Human Detection/Dataset/
+Human Detection/Human Detection/keypoints/
+Human Detection/runs/
+Human Detection/weights/
+Human Detection/yolov5nu.pt
+# Checkpoint DD-Net: giu best.pt (0,6 MB, nguon cua models/ddnet_gesture.pt), bo last.pt
+Human Detection/Human Detection/checkpoints/**/last.pt
+
+# Video va anh xuat ra khi test/debug
+*.mp4
+*.avi
+*.mov
+*_preview.*
+
+# LUU Y: model dung khi chay (ros2_amr_UI-main/src/human_detection/models/*.pt, *.task)
+# KHONG bi bo qua, vi node can chung de chay tren robot.
+
+# ----- IDE / he dieu hanh -----
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ----- Bi mat -----
+.env
+*.pem
+*.key

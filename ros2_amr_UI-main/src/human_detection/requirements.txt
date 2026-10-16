@@ -1,0 +1,17 @@
+# Thu vien Python cho gesture_node (ROS 2 Jazzy, Ubuntu 24.04, Python 3.12, chay CPU).
+# Cai bang setup_venv.sh, KHONG cai thang vao Python he thong.
+# Cac phien ban duoi day da test chay duoc tren laptop (2026-10-16).
+
+# torch ban CPU (nhe hon nhieu so voi ban CUDA)
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+torchvision==0.29.1+cpu
+
+# Giu numpy 1.x: cac module ROS cai tu apt (rclpy, ...) duoc build voi numpy 1.x.
+# venv tao voi --system-site-packages nen dung luon python3-numpy 1.26 cua apt.
+numpy<2
+
+ultralytics==8.4.178
+mediapipe==1.1.1
+opencv-python==4.11.0.86
+opencv-contrib-python==4.11.0.86

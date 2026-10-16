@@ -1,0 +1,31 @@
+gesture_node:
+  ros__parameters:
+    # Anh camera truoc tu package camera (sensor_msgs/Image, bgr8)
+    image_topic: "/image_front"
+
+    # Duong dan model. De trong -> dung file trong models/ cua package
+    yolo_model_path: ""        # models/best.pt                    (YOLO tim nguoi)
+    gesture_model_path: ""     # models/ddnet_gesture.pt           (DD-Net, 7 cu chi RoCoG)
+    pose_model_path: ""        # models/pose_landmarker_lite.task  (MediaPipe Pose)
+
+    # false = bo YOLO, coi ca khung hinh la nguoi (nhanh hon nhung khac luc train)
+    use_yolo: true
+
+    # "" = tu chon (cuda neu co), "cpu", "cuda"
+    device: ""
+
+    # QoS cua subscriber phai khop voi camera: "sensor_data" (Best Effort) hoac "reliable"
+    qos_reliability: "sensor_data"
+
+    # Publish anh debug (khung nguoi + xac suat) len /gesture/debug_image
+    publish_debug_image: true
+
+    # Bo loc lenh (giong robot_control.py)
+    conf_threshold: 0.7    # xac suat toi thieu de chap nhan cu chi
+    confirm_count: 3       # so lan du doan lien tiep de doi lenh (Halt luon = 1)
+    hold_sec: 3.0          # khong thay cu chi moi qua bay nhieu giay -> ve Attention
+    lost_sec: 1.0          # mat nguoi qua bay nhieu giay -> ve Attention
+
+    # Publish geometry_msgs/Twist dieu khien robot. TAT mac dinh: chi bat khi da test ky.
+    enable_cmd_vel: false
+    cmd_vel_topic: "/cmd_vel"
