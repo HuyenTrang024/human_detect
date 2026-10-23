@@ -19,7 +19,8 @@ Chạy thử:
     python rocog_labels.py
     python rocog_labels.py --ann-dir Dataset/real_ground/annotations --dataset-root Dataset
 
-Lớp của model (CLASS_NAMES) khác 7 lớp RoCoG: Advance/Attention/Rally gộp thành None, thêm Left/Right.
+Lớp của model (CLASS_NAMES) khác 7 lớp RoCoG: bỏ Advance/Attention/Rally/FollowMe (video các lớp này bị bỏ
+qua khi đọc file chia), thêm Left/Right. Model không có lớp None: lệnh yếu/không chắc được lọc ở robot bằng ngưỡng conf.
 Sửa CLASS_NAMES thì phải train lại.
 """
 
@@ -48,18 +49,14 @@ ROCOG_CLASS_NAMES: List[str] = [
     "FollowMe",       # 5
     "MoveInReverse",  # 6
 ]
-# Cử chỉ RoCoG KHÔNG dùng làm lệnh: gộp vào lớp None (là ví dụ "giống lệnh nhưng không phải lệnh").
-MERGED_TO_NONE = {"Advance", "Attention", "Rally"}
 
 # Lớp của model. THỨ TỰ NÀY = số nhãn trong file robot (record_node.py phải dùng đúng thứ tự này).
 CLASS_NAMES: List[str] = [
     "MoveForward",    # 0
     "Halt",           # 1
-    "FollowMe",       # 2
-    "MoveInReverse",  # 3
-    "Left",           # 4
-    "Right",          # 5
-    "None",           # 6
+    "MoveInReverse",  # 2
+    "Left",           # 3
+    "Right",          # 4
 ]
 NUM_CLASSES = len(CLASS_NAMES)
 CLASS_TO_ID: Dict[str, int] = {name: i for i, name in enumerate(CLASS_NAMES)}
@@ -81,7 +78,7 @@ class VideoEntry:
     """Một video trong một file chia."""
     rel_path: str      # đường dẫn như trong file chia: real/ground/Halt/S01_....mp4
     label: int         # số nhãn của model (chỉ số trong CLASS_NAMES)
-    class_name: str    # "Halt"; Advance/Attention/Rally đã gộp thành "None"
+    class_name: str    # "Halt"
     subject: str       # "S01", "S04b"; video tổng hợp thì là tên scene, ví dụ "Scene1"
     source: str        # "real" hoặc "syn"
     split: str         # tên file chia nó đến từ
@@ -176,8 +173,8 @@ def read_split(split: str, ann_dir: Path | str = config.ANNOTATION_DIR) -> List[
                 f"({name}) -> {rel_path}"
             )
             continue
-        if name in MERGED_TO_NONE:
-            name = "None"
+        if name not in CLASS_TO_ID:      # lớp RoCoG không dùng (Advance, Attention, Rally, FollowMe)
+            continue
         label = CLASS_TO_ID[name]
 
         source = "syn" if rel_path.startswith("syn") else "real"

@@ -10,8 +10,8 @@ ngược / đang quay). Cần màn hình (hoặc ssh -X); không chạy được
 Tham số: --out-dir --subject --distances --countdown --duration --manual --width --height --fps --serial.
 
 Phím (bấm trong cửa sổ):
-    1 2 3 4  MoveForward Halt FollowMe MoveInReverse
-    l r n  Left Right None
+    1 2 3  MoveForward Halt MoveInReverse
+    l r  Left Right
     p / o  người kế / người trước (S11 -> S12)         d  đổi khoảng cách (vòng qua danh sách `distances`)
     x      huỷ clip đang quay                           u  xoá clip vừa lưu (kể cả dòng annotation)
     SPACE  đang đếm ngược: tạm dừng (người chưa vào kịp), bấm lại để đếm ngược lại từ đầu
@@ -23,8 +23,8 @@ Phím (bấm trong cửa sổ):
 Bấm phím nhãn -> đếm ngược `countdown` giây -> tự quay `duration` giây -> tự lưu.
 Kết quả (cùng định dạng RoCoG, thư mục con trùng tên lớp):
     <out_dir>/real/robot/<Lớp>/S11_5m_Left_take01.mp4
-    <out_dir>/annotations/robot_all.txt      dòng: real/robot/Left/S11_5m_Left_take01.mp4 7
-Số nhãn: MoveForward=0 Halt=1 FollowMe=2 MoveInReverse=3 Left=4 Right=5 None=6 (code train phải dùng đúng thứ tự này).
+    <out_dir>/annotations/robot_all.txt      dòng: real/robot/Left/S11_5m_Left_take01.mp4 3
+Số nhãn: MoveForward=0 Halt=1 MoveInReverse=2 Left=3 Right=4 (code train phải dùng đúng thứ tự này).
 """
 
 import re
@@ -37,9 +37,9 @@ import cv2
 import numpy as np
 
 # Thứ tự = số nhãn.
-CLASS_NAMES = ['MoveForward', 'Halt', 'FollowMe', 'MoveInReverse', 'Left', 'Right', 'None']
-KEY_TO_CLASS = {'1': 'MoveForward', '2': 'Halt', '3': 'FollowMe', '4': 'MoveInReverse',
-                'l': 'Left', 'r': 'Right', 'n': 'None'}
+CLASS_NAMES = ['MoveForward', 'Halt', 'MoveInReverse', 'Left', 'Right']
+KEY_TO_CLASS = {'1': 'MoveForward', '2': 'Halt', '3': 'MoveInReverse',
+                'l': 'Left', 'r': 'Right'}
 
 IDLE, COUNTDOWN, RECORDING, READY, PAUSED = 'IDLE', 'COUNTDOWN', 'RECORDING', 'READY', 'PAUSED'
 MIN_CLIP_SECS = 3.5      # clip thủ công ngắn hơn mức này thì bỏ (cửa sổ train ~3,2 s nên clip ngắn vô dụng)
@@ -272,9 +272,9 @@ def draw_ui(frame: Optional[np.ndarray], cam_status: str, cam_color, rec: Sessio
         _put(panel, rec.message, (10, 84), GREEN, 0.55, 1)
     elif rec.state != IDLE:
         _put(panel, 'SPACE = tam dung/tiep tuc/bat dau/dung    x = huy clip', (10, 84), YELLOW, 0.55, 1)
-    _put(panel, '1 MoveForward  2 Halt  3 FollowMe  4 MoveInReverse',
+    _put(panel, '1 MoveForward  2 Halt  3 MoveInReverse',
          (10, 112), (170, 170, 170), 0.45, 1)
-    _put(panel, 'l Left r Right n None | SPACE quay/dung | m che do | p/o nguoi | d cach | u xoa | x huy | q thoat',
+    _put(panel, 'l Left r Right | SPACE quay/dung | m che do | p/o nguoi | d cach | u xoa | x huy | q thoat',
          (10, 134), (170, 170, 170), 0.45, 1)
     return np.vstack([view, panel])
 

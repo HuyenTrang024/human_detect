@@ -6,7 +6,6 @@ An toàn:
   - Mất người / mất khung xương quá lost_sec -> về "None" (đứng yên).
   - Không có cử chỉ mới thì giữ lệnh tối đa hold_sec rồi về "None".
   - Dự đoán có xác suất < conf (mặc định 0.8) coi như "None".
-  - Advance / Attention / Rally (model cũ còn lớp này) coi như "None".
   - Halt luôn được chấp nhận ngay (confirm = 1 cho Halt).
 """
 
@@ -24,14 +23,12 @@ from typing import Dict, Optional
 class Motion:
     vx: float = 0.0
     wz: float = 0.0
-    follow: bool = False       # FollowMe: bật chế độ bám theo người (chưa làm)
 
 
 GESTURE_TO_MOTION: Dict[str, Motion] = {
     "MoveForward":   Motion(vx=0.20),
     "MoveInReverse": Motion(vx=-0.15),
     "Halt":          Motion(),
-    "FollowMe":      Motion(follow=True),
     "Left":          Motion(),          # chưa gắn chuyển động: sang trái/phải do Navigation của nhóm quyết định
     "Right":         Motion(),
     "None":          Motion(),          # không có lệnh: đứng yên
@@ -39,13 +36,12 @@ GESTURE_TO_MOTION: Dict[str, Motion] = {
 STOP = Motion()
 
 # Số hiệu lệnh publish lên /gesture (std_msgs/Int32). BẢNG CỐ ĐỊNH, bên nhận dùng đúng bảng này;
-# trùng thứ tự CLASS_NAMES lúc train. Thêm cử chỉ mới thì thêm vào CUỐI, đừng đổi số cũ.
+# trùng thứ tự CLASS_NAMES lúc train (model 5 lớp, đã bỏ FollowMe). "None" (không có lệnh) là số cuối.
+# Thêm cử chỉ mới thì thêm vào CUỐI model và bảng này.
 GESTURE_IDS: Dict[str, int] = {
-    "MoveForward": 0, "Halt": 1, "FollowMe": 2, "MoveInReverse": 3, "Left": 4, "Right": 5, "None": 6,
+    "MoveForward": 0, "Halt": 1, "MoveInReverse": 2, "Left": 3, "Right": 4, "None": 5,
 }
 IDLE = "None"                           # lệnh khi không có cử chỉ
-# Lớp RoCoG đã bỏ khỏi danh sách lệnh; model cũ (7 lớp) còn dự đoán ra chúng thì coi như IDLE.
-IGNORED_GESTURES = frozenset({"Advance", "Attention", "Rally"})
 
 
 class CommandFilter:
@@ -69,7 +65,7 @@ class CommandFilter:
                 self.current = IDLE
             return self.current
         self._last_seen = now
-        if label in IGNORED_GESTURES or prob < self.conf:     # không đủ tin cậy / không phải lệnh -> None
+        if prob < self.conf:                                   # không đủ tin cậy -> None
             label, prob = IDLE, 1.0
 
         if prob >= self.conf and label != self.current:

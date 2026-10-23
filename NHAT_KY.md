@@ -237,7 +237,71 @@ human_detect/
        (video đã có `.npz` thì bỏ qua; xem `keypoints/extract_report.csv`).
     4. `python train_ddnet.py --mode scratch --train-splits all_train --val-split all_val --name v2`, rồi
        `python evaluate_ddnet.py --ckpt checkpoints/v2/best.pt --split all_test`.
-    - 7 lớp (có Left/Right/None) nên model cũ 5 lớp phải train lại.
+    - 7 lớp (có Left/Right/None) nên model cũ 5 lớp phải train lại. **(Đã đổi ngày 2026-10-23: còn 5 lớp, không có None/FollowMe, xem mục 21.)**
+
+### 2026-10-23
+
+21. **Làm sạch dataset robot quay thêm** (`~/robot_gesture_data`, mô tả đầy đủ trong [DATASET_ROBOT.md](DATASET_ROBOT.md)).
+    - 230 clip, 7 người (S11–S17), 2 m, 5 s, 30 FPS. `robot_all.txt` có 268 dòng nhưng 38 dòng trỏ tới file đã xoá
+      (17 FollowMe, 20 Right, 1 MoveForward) → lọc còn 230 dòng khớp file (bản gốc: `robot_all.txt.bak`).
+    - **Bỏ lớp `None` và `FollowMe`** khỏi bộ lớp của model. Còn 5 lớp: MoveForward 0, Halt 1, MoveInReverse 2, Left 3, Right 4
+      (sửa `rocog_labels.py`: bỏ `None`/`MERGED_TO_NONE`; video RoCoG Advance/Attention/Rally/FollowMe bị bỏ qua khi đọc file chia;
+      sửa `record_node.py`: 5 phím `1 2 3 l r`). Đã đánh lại số nhãn trong `robot_all.txt` theo tên thư mục.
+      Video RoCoG còn dùng được: train 69, val 18, test 42 (đếm tay từ file annotation).
+      **Chưa sửa phía robot:** `lock_gesture: "FollowMe"` (`gesture_params.yaml`, `target_selector.py`) và `GESTURE_IDS` trong
+      `command_filter.py` (`"None"` ở đó là lệnh đứng yên, không phải lớp model). Model mới không bao giờ ra FollowMe nên khoá người chủ sẽ không chạy.
+    - **Không cắt clip 5 s.** Đo bằng chuyển động cổ tay (162 clip tốt): cử chỉ bắt đầu ~0,4 s, kết thúc ~4,0–4,4 s. Cửa sổ 3,2 s (sau `TRIM_SEC`)
+      có 91–98% thời gian đang cử động. Muốn sạch hơn thì tăng `TRIM_SEC` lên 0,4–0,5 thay vì cắt file.
+    - **Lỗi chọn người:** trích keypoint, 68 clip (S11–S13 và 1 clip S14) có `ok_ratio` < 0,5. Nguyên nhân không phải pose kém:
+      phòng S11–S13 camera sát sàn, người nhỏ và xa, YOLO nhận cái ghế là người, `PersonCropper._choose` chọn bbox **to nhất**
+      nên chọn ghế, MediaPipe vẽ khung xương lên ghế. Hạ ngưỡng tin cậy pose chỉ làm khung xương bám ghế nhiều hơn (không dùng được).
+    - **Sửa `person_crop.py`** (`_choose`): khi chưa có bbox trước, chọn theo `conf x độ gần giữa khung` thay vì diện tích.
+      Chạy lại 68 clip hỏng: `ok_ratio` 0,23 → 0,99, 67/68 dùng được; 14 clip tốt kiểm tra lại không đổi (1,00). Xem khung hình: khung xương bám đúng người.
+      Bản copy trong ROS (`gesture/person_crop.py`) **chưa sửa** (robot dùng ByteTrack chọn người chủ nên ít bị).
+      Giữ cả 230 clip, kể cả clip "xa", để model học được cả người nhỏ.
+    - **Chia theo người:** train S11–S14, val S15, test S16–S17; ghép RoCoG thành `all_train/val/test.txt`.
+      Số video mỗi lớp (train/val/test): MoveForward 46/11/30, Halt 55/17/35, MoveInReverse 43/12/26, Left 20/7/15, Right 23/7/11.
+      Left và Right ít ở train (chỉ có từ data robot), cần theo dõi khi đánh giá.
+    - **Loại clip hỏng:** sau khi trích keypoint (người dùng chạy), chỉ còn `MoveInReverse/S14_2m_MoveInReverse_take03.mp4` có `ok_ratio` < 0,5 (0,027).
+      Đã chuyển video sang `rejected/` (không xoá; cả `~/robot_gesture_data/rejected/` và `Dataset/real_ground/rejected/`), bỏ khỏi `robot_all/robot_train/all_train.txt`
+      và chuyển `.npz` sang `keypoints_v2/rejected/`. Còn 229 clip robot (MoveInReverse 39); các lớp khác không đổi.
+    - **Keypoint lưu ở `keypoints_v2/`** (chép keypoint RoCoG cũ sang, thư mục `keypoints/` cũ không bị đè; đã thêm vào `.gitignore`).
+      Trích keypoint do người dùng tự chạy: `python extract_keypoints.py --splits all_train all_val all_test --device 0 --out-dir keypoints_v2`.
+      (Mình có chạy thử và dừng sau 28/230 clip; `.npz` đã trích còn nguyên, lần sau tự bỏ qua.)
+    - **Train (người dùng tự chạy):**
+      `python train_ddnet.py --mode scratch --train-splits all_train --val-split all_val --kp-dir keypoints_v2 --name v2_5cls --device cuda`
+      rồi `python evaluate_ddnet.py --ckpt checkpoints/v2_5cls/best.pt --split all_test --kp-dir keypoints_v2`.
+      Không bật `--use-mirror` (lật ngang lẫn Left với Right). Model cũ (`scratch_f16`, 7 lớp) không dùng được với bảng 5 lớp.
+
+22. **Sửa phía robot cho model 5 lớp (ai cũng điều khiển được).** Nhận diện không cần sửa code vì `gesture_node` lấy `class_names` từ file `.pt`
+    và `command_filter.py` tra theo tên lớp. Lỗi cần sửa: `lock_gesture: "FollowMe"` không còn trong danh sách lớp nên `gesture_node` sẽ báo lỗi và dừng
+    ngay khi khởi động (`gesture_node.py`, kiểm tra `lock_gesture not in self.names`).
+    - `gesture_params.yaml`: `enable_target_lock: false` (không khoá người chủ, ai cũng điều khiển được); `lock_gesture: "Right"` (chỉ dùng khi bật khoá).
+    - Đổi giá trị mặc định `lock_gesture` từ `FollowMe` sang `Right` trong `gesture_node.py` và `tracking/target_selector.py` (tránh lỗi khi ai đó bật lại khoá).
+      Chọn `Right`/`Left` vì chưa gắn chuyển động nên khoá nhầm cũng không làm robot chạy; không dùng `Halt`, `MoveForward`, `MoveInReverse`.
+    - Cập nhật chú thích trong `gesture_params.yaml`, docstring `gesture_node.py`, `README.md` của package. `GESTURE_IDS` giữ nguyên (bên nhận `/gesture` dùng bảng số này).
+    - **Giới hạn khi tắt khoá:** mỗi lúc chỉ nhận diện 1 người (chọn theo IoU với khung trước; chưa có thì người to nhất), nên người đứng trước camera
+      làm cử chỉ vẫn có thể bị người khác chen vào. Bản `gesture/person_crop.py` trong ROS vẫn chọn bbox to nhất (lỗi ghế thành người có thể lặp lại).
+    - Chưa test trên robot. Cần chép `best.pt` thành `models/ddnet_gesture.pt` và chỉnh `conf_threshold`/`confirm_count` vì không còn lớp `None`.
+
+23. **Đổi output `/gesture` và giao diện debug theo 5 lớp mới.**
+    - **Bảng số hiệu `/gesture` (`GESTURE_IDS` trong `command_filter.py`) đã ĐỔI** theo thứ tự lớp của model:
+      MoveForward 0, Halt 1, MoveInReverse 2, Left 3, Right 4, None 5 (không có lệnh). Trước đây là 0 MoveForward, 1 Halt, 2 FollowMe, 3 MoveInReverse,
+      4 Left, 5 Right, 6 None. **Phần Navigation của nhóm đọc `/gesture` phải đổi theo bảng mới** (`/gesture/name` vẫn là tên chữ, không đổi cách dùng).
+    - Bỏ `FollowMe` và trường `follow` khỏi `GESTURE_TO_MOTION`, bỏ `IGNORED_GESTURES` (Advance/Attention/Rally) khỏi `CommandFilter`.
+    - **`draw_panel` (ảnh `/gesture/debug_image`) rút gọn:** chỉ còn một dòng ở góc ảnh `<cử chỉ> <xx>%` (độ tin cậy của dự đoán); chưa có dự đoán thì hiện lý do
+      (`collecting frames...`, `no person`, ...). Bỏ thanh xác suất từng lớp và dòng `CMD`. Test cục bộ bằng ảnh giả (không chạy trong ROS).
+      `CommandFilter` test: 3 lần `Left` 0,9 → `Left`, `Halt` đi qua ngay, mất người quá `lost_sec` → `None`.
+
+24. **Rà soát toàn bộ code sau khi đổi sang 5 lớp** (đọc lại mọi file `.py`/`.yaml`/`.md` có nhắc tới tên lớp). Kết quả:
+    - **Đã sửa:** `Human Detection/Human Detection/robot_control.py` (bản chạy tay trên máy train): bảng cử chỉ còn 5 lớp + `None`, trạng thái nghỉ đổi từ
+      `Attention` sang `None`, bỏ `follow`; trước đó model 5 lớp ra `Left`/`Right` thì bảng không có, và trạng thái nghỉ `Attention` không còn tồn tại.
+    - **Đã sửa chú thích "7 lớp"** ở `demo_camera.py`, `train_ddnet.py`, `ddnet_model.py` (hai bản), `gesture_node.py`, `camera_source.py`.
+    - **Đã kiểm tra, không cần sửa:** `train_ddnet.py`/`evaluate_ddnet.py`/`gesture_dataset.py` (lấy `CLASS_NAMES`/`class_names` động; `mirror_label_map` vẫn đúng với Left/Right),
+      `extract_keypoints.py`, `gesture_recognizer.py` (hai bản, lấy tên lớp từ checkpoint), `demo_camera.py` (vẽ theo `class_names`), `trajectory_node.py`
+      (`/people/target_id` mặc định -1 khi tắt khoá), hai file launch, `test_inference.py` (chỉ test YOLO).
+    - `rocog_labels.py` chạy thật bằng env `human_detect`: `all_train` 187, `all_val` 54, `all_test` 117 video, đủ 5 lớp mỗi tập (khớp mục 21).
+    - `BAO_CAO_HUAN_LUYEN.md` và bảng "Accuracy test 95%" trong `README.md` là của model 7 lớp cũ; sẽ cập nhật sau khi train xong `v2_5cls`.
 
 ## Trạng thái hiện tại
 
@@ -259,7 +323,13 @@ human_detect/
 - [ ] Đo camera thật (chiều cao, góc cúi, FOV) và điền `config/camera_model.yaml` trước khi bật `use_ground: true`
 - [ ] Chưa làm phần né người (dừng/đổi hướng); `trajectory_node` chỉ dự đoán, không publish `/cmd_vel`
 - [x] Cài thư viện train trên máy `trangto` (mục 18) và viết `record_node` có nút tạm dừng / thủ công (mục 19)
-- [ ] Test `record_node` với camera thật; thu dataset mới (cử chỉ cũ + Left/Right/None), trích keypoint, train lại 7 lớp (mục 20)
+- [x] Làm sạch dataset robot (230 clip), bỏ lớp None/FollowMe, sửa `person_crop.py`, chia theo người (mục 21)
+- [x] Trích keypoint vào `keypoints_v2/`; loại clip `S14 MoveInReverse take03` (ok=0,027) sang `rejected/` (mục 21)
+- [ ] Train `v2_5cls` và đánh giá trên `all_test` (mục 21); chép `best.pt` thành `ddnet_gesture.pt` trong `models/`
+- [x] Phía robot: tắt khoá người chủ, `lock_gesture` mặc định `Right` (mục 22)
+- [ ] Thử ngưỡng `conf_threshold`/`confirm_count` trên robot vì không còn lớp None
+- [ ] Sửa bản copy `person_crop.py` trong package ROS cho giống bản train (nếu muốn)
+- [ ] Test `record_node` với camera thật
 
 ## Việc tiếp theo
 

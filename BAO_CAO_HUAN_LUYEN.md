@@ -1,5 +1,8 @@
 # BÁO CÁO CÔNG VIỆC: HUẤN LUYỆN MÔ HÌNH NHẬN DIỆN NGƯỜI VÀ CỬ CHỈ CHO ROBOT AMR
 
+> **Lưu ý (2026-10-23):** báo cáo này mô tả model DD-Net 7 lớp RoCoG cũ (`scratch_f16`). Model hiện tại có 5 lớp (MoveForward, Halt, MoveInReverse, Left, Right), train bằng RoCoG + dữ liệu robot (xem `DATASET_ROBOT.md`, `NHAT_KY.md` mục 21). Số liệu dưới đây chưa được cập nhật.
+
+
 **Dự án:** Human Detection trên ROS 2 (điều khiển robot AMR bằng cử chỉ)
 **Thời gian:** 16/10/2026 – 21/10/2026
 **Người thực hiện:** Trang To

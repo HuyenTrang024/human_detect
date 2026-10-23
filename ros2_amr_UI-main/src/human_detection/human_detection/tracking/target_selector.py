@@ -30,7 +30,7 @@ IDLE, SEARCHING, LOCKED, LOST = "IDLE", "SEARCHING", "LOCKED", "LOST"
 
 
 class TargetSelector:
-    def __init__(self, lock_gesture: str = "FollowMe", lost_grace_sec: float = 1.5,
+    def __init__(self, lock_gesture: str = "Right", lost_grace_sec: float = 1.5,
                  miss_tolerance_sec: float = 0.3, reassoc_dx_ratio: float = 1.5,
                  reassoc_size_ratio: float = 1.6, min_conf: float = 0.4,
                  candidate_dwell_sec: float = 5.0):

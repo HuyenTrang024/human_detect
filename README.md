@@ -15,7 +15,7 @@ Camera ─► YOLOv5n ─► ByteTrack ─► MediaPipe Pose ─► DD-Net ─�
 | Tìm người | YOLOv5n (finetune) | mAP50 0,83 |
 | Theo dõi người | ByteTrack | – |
 | Khung xương | MediaPipe Pose lite (dùng sẵn) | – |
-| Phân loại cử chỉ | DD-Net lite (train từ đầu) | Accuracy test 95% |
+| Phân loại cử chỉ | DD-Net lite (train từ đầu, 5 lớp) | Accuracy test 95% (model 7 lớp cũ, chưa cập nhật cho 5 lớp) |
 
 Báo cáo đầy đủ: [BAO_CAO_HUAN_LUYEN.md](BAO_CAO_HUAN_LUYEN.md)
 
