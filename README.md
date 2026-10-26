@@ -1,6 +1,4 @@
-# SoDA
-
-**SoDA** là dự án robot AMR nhận ra người và hiểu lệnh bằng cử chỉ tay (module Human Detection).
+# Human Detection
 
 Robot AMR nhận ra người trước camera và hiểu lệnh bằng cử chỉ tay. Chạy trên CPU, ROS 2 Jazzy.
 
