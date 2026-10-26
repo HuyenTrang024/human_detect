@@ -1,4 +1,6 @@
-# Human Detection
+# SoDA
+
+**SoDA** là dự án robot AMR nhận ra người và hiểu lệnh bằng cử chỉ tay (module Human Detection).
 
 Robot AMR nhận ra người trước camera và hiểu lệnh bằng cử chỉ tay. Chạy trên CPU, ROS 2 Jazzy.
 
@@ -25,11 +27,10 @@ Báo cáo đầy đủ: [BAO_CAO_HUAN_LUYEN.md](BAO_CAO_HUAN_LUYEN.md)
 human_detect/
 │
 ├── Human Detection/Human Detection/   HUẤN LUYỆN MÔ HÌNH
-│   ├── extract_keypoints.py              video -> khung xương
-│   ├── train_ddnet.py                    train DD-Net
-│   ├── evaluate_ddnet.py                 đánh giá trên tập test
-│   ├── finetune_human.py                 finetune YOLO
-│   └── checkpoints/scratch_f16/          DD-Net đã train + kết quả
+│   ├── apps/                             demo camera, detect_person, robot_control
+│   ├── gesture/                          DD-Net, pose, nhận diện cử chỉ
+│   ├── training/                         extract_keypoints, train/evaluate DD-Net, finetune YOLO
+│   └── checkpoints/                      DD-Net đã train + kết quả
 │
 ├── ros2_amr_UI-main/src/              ROS 2 WORKSPACE
 │   ├── camera/                           đọc camera RealSense
@@ -80,9 +81,9 @@ Danh sách đầy đủ: [package README](ros2_amr_UI-main/src/human_detection/R
 
 ```bash
 cd "Human Detection/Human Detection"
-python extract_keypoints.py --splits train val test --device 0
-python train_ddnet.py --mode scratch --name v2
-python evaluate_ddnet.py --ckpt checkpoints/v2/best.pt --split test
+python -m training.extract_keypoints --splits train val test --device 0
+python -m training.train_ddnet --mode scratch --name v2
+python -m training.evaluate_ddnet --ckpt checkpoints/v2/best.pt --split test
 ```
 
 ## Hạn chế
