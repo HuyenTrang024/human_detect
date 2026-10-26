@@ -24,9 +24,9 @@ from std_msgs.msg import Int32, String
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_msgs.msg import Detection2DArray
 
-from .tracking.camera_model import CameraModel
-from .tracking.trajectory_predictor import TrajectoryPredictor
-from .tracking.types import Observation, TrackedPerson
+from ..tracking.camera_model import CameraModel
+from ..tracking.trajectory_predictor import TrajectoryPredictor
+from ..tracking.types import Observation, TrackedPerson
 
 
 class TrajectoryNode(Node):

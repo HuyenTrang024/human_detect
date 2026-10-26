@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Tao moi truong ao (venv) cho gesture_node: ROS 2 Jazzy, chay CPU.
 #
-#   ./setup_venv.sh                  # tao o ~/gesture_venv
-#   ./setup_venv.sh /duong/dan/venv  # tao o cho khac
+#   ./scripts/setup_venv.sh                  # tao o ~/gesture_venv
+#   ./scripts/setup_venv.sh /duong/dan/venv  # tao o cho khac
 #
 # Sau do moi lan chay:
 #   source /opt/ros/jazzy/setup.bash
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 VENV="${1:-$HOME/gesture_venv}"
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 echo "=== 1. Goi he thong (can sudo) ==="
 PKGS=()

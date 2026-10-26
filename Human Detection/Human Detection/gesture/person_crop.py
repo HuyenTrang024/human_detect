@@ -20,7 +20,7 @@ Hợp đồng với extract_keypoints.py:
                  = keypoint trong ảnh gốc
 
 Chạy thử trên một video:
-    python person_crop.py --video đường/dẫn/video.mp4 --out preview.mp4
+    python -m gesture.person_crop --video đường/dẫn/video.mp4 --out preview.mp4
 """
 
 from __future__ import annotations
@@ -32,8 +32,7 @@ from typing import List, Optional, Tuple
 
 import numpy as np
 
-import config
-
+from . import config
 Box = Tuple[float, float, float, float, float]   # x1, y1, x2, y2, conf
 
 
@@ -181,7 +180,7 @@ class PersonCropper:
 
 
 # ---------------------------------------------------------------------------
-# Chạy thử: python person_crop.py --video x.mp4 --out preview.mp4
+# Chạy thử: python -m gesture.person_crop --video x.mp4 --out preview.mp4
 # ---------------------------------------------------------------------------
 def _demo() -> None:
     import cv2

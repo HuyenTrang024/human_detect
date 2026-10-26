@@ -18,10 +18,10 @@ from typing import Deque, List, Optional, Tuple
 import numpy as np
 import torch
 
-import config
-from ddnet_model import load_checkpoint
-from person_crop import FullFrameDetector, PersonCropper, YoloPersonDetector
-from skeleton_adapter import SkeletonAdapter
+from . import config
+from .ddnet_model import load_checkpoint
+from .person_crop import FullFrameDetector, PersonCropper, YoloPersonDetector
+from .skeleton_adapter import SkeletonAdapter
 
 
 @dataclass
@@ -51,7 +51,7 @@ class GestureRecognizer:
         detector = FullFrameDetector() if yolo_weights is None else \
             YoloPersonDetector(yolo_weights, device=None if device == "cpu" else "0")
         self.cropper = PersonCropper(detector)
-        from pose_estimate import PoseEstimator
+        from .pose_estimate import PoseEstimator
         self.pose = PoseEstimator(model_complexity=0 if "lite" in str(self.meta.get("pose_model", "lite")) else 1)
         self.adapter = SkeletonAdapter()
 

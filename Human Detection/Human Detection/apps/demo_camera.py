@@ -4,10 +4,10 @@ demo_camera.py - Thử nhận diện cử chỉ từ camera (không điều khi�
 Đứng trước camera, làm một trong 5 cử chỉ (MoveForward, Halt, MoveInReverse, Left, Right); chương trình in cử chỉ đoán được
 và xác suất các lớp. Cần ~3 giây đầu để thu đủ khung xương cho một cửa sổ.
 
-    python demo_camera.py --ckpt checkpoints/scratch_f16/best.pt
-    python demo_camera.py --ckpt checkpoints/scratch_f16/best.pt --camera realsense   # D435i
-    python demo_camera.py --ckpt checkpoints/scratch_f16/best.pt --camera 1 --no-show
-    python demo_camera.py --ckpt ... --camera đường/dẫn/video.mp4      # thử trên video
+    python -m apps.demo_camera --ckpt checkpoints/scratch_f16/best.pt
+    python -m apps.demo_camera --ckpt checkpoints/scratch_f16/best.pt --camera realsense   # D435i
+    python -m apps.demo_camera --ckpt checkpoints/scratch_f16/best.pt --camera 1 --no-show
+    python -m apps.demo_camera --ckpt ... --camera đường/dẫn/video.mp4      # thử trên video
 
 Nhấn q (trong cửa sổ camera) hoặc Ctrl+C để thoát.
 """
@@ -19,9 +19,9 @@ import time
 
 import cv2
 
-import config
-from camera_source import open_source
-from gesture_recognizer import GestureRecognizer
+from gesture import config
+from .camera_source import open_source
+from gesture.gesture_recognizer import GestureRecognizer
 
 
 def draw_panel(frame, res, names) -> None:

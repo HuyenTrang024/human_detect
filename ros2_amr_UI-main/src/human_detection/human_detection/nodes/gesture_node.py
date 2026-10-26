@@ -34,7 +34,7 @@ from sensor_msgs.msg import Image
 from std_msgs.msg import Int32, String
 from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
-from .image_utils import bgr_to_imgmsg, imgmsg_to_bgr
+from ..utils.image_utils import bgr_to_imgmsg, imgmsg_to_bgr
 
 # cv2.putText không vẽ được chữ có dấu -> đổi lý do sang ASCII khi vẽ ảnh debug
 REASON_ASCII = {
@@ -112,8 +112,8 @@ class GestureNode(Node):
 
         # 2. Load pipeline (import muộn để lỗi thiếu thư viện hiện rõ qua log)
         import torch
-        from .gesture.command_filter import CommandFilter, GESTURE_IDS, GESTURE_TO_MOTION, IDLE, STOP
-        from .gesture.gesture_recognizer import GestureRecognizer
+        from ..gesture.command_filter import CommandFilter, GESTURE_IDS, GESTURE_TO_MOTION, IDLE, STOP
+        from ..gesture.gesture_recognizer import GestureRecognizer
         self._motions, self._stop = GESTURE_TO_MOTION, STOP
         self._ids, self._idle = GESTURE_IDS, IDLE
 
@@ -125,7 +125,7 @@ class GestureNode(Node):
         self.names = self.recognizer.class_names
         self.selector = None
         if self.enable_tracking and bool(self.get_parameter('enable_target_lock').value):
-            from .tracking.target_selector import TargetSelector
+            from ..tracking.target_selector import TargetSelector
             lock_gesture = self.get_parameter('lock_gesture').value
             if lock_gesture not in self.names:
                 raise ValueError(f'lock_gesture "{lock_gesture}" khong co trong {self.names}')

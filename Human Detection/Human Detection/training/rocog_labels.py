@@ -16,8 +16,8 @@ Các tập dùng cho real_ground (chia theo người, chính thức):
   real_ground_train.txt         204 video  = train_tsonly + val_tsonly
 
 Chạy thử:
-    python rocog_labels.py
-    python rocog_labels.py --ann-dir Dataset/real_ground/annotations --dataset-root Dataset
+    python -m training.rocog_labels
+    python -m training.rocog_labels --ann-dir Dataset/real_ground/annotations --dataset-root Dataset
 
 Lớp của model (CLASS_NAMES) khác 7 lớp RoCoG: bỏ Advance/Attention/Rally/FollowMe (video các lớp này bị bỏ
 qua khi đọc file chia), thêm Left/Right. Model không có lớp None: lệnh yếu/không chắc được lọc ở robot bằng ngưỡng conf.
@@ -34,8 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
-import config
-
+from gesture import config
 # ---------------------------------------------------------------------------
 # Bảng lớp
 # ---------------------------------------------------------------------------

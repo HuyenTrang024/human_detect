@@ -3,7 +3,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Đường dẫn
 # ---------------------------------------------------------------------------
-PROJECT_DIR = Path(__file__).resolve().parent      # thư mục chứa code này
+PROJECT_DIR = Path(__file__).resolve().parent.parent   # thư mục gốc dự án (chứa gesture/, training/, apps/)
 WORKSPACE_DIR = PROJECT_DIR.parent                 # thư mục cha: chứa Dataset/, runs/, weights/
 
 # Thư mục gốc chứa video RoCoG. File chia ghi đường dẫn dạng
@@ -17,7 +17,7 @@ DATASET_ROOT = WORKSPACE_DIR / "Dataset"
 ANNOTATION_DIR = DATASET_ROOT / "real_ground" / "annotations"
 
 # Nơi extract_keypoints.py ghi file .npz (mỗi video một file)
-KEYPOINT_DIR = PROJECT_DIR / "keypoints"
+KEYPOINT_DIR = PROJECT_DIR / "data" / "keypoints"
 
 # Nơi train_ddnet.py ghi checkpoint, log
 CHECKPOINT_DIR = PROJECT_DIR / "checkpoints"
@@ -91,7 +91,7 @@ JHMDB_FPS = 30           # JHMDB quay ở 30 FPS, clip chỉ dài ~1 giây (15-4
 # Chỉ số khớp trong bố cục của ADAPTER dùng để chuẩn hoá dữ liệu JHMDB giống adapter
 # (gốc = trung điểm 2 vai, thước = độ dài thân / TORSO_TO_SHOULDER_RATIO).
 # Lấy thẳng từ skeleton_adapter.py để không bao giờ lệch khi bạn sửa bố cục khớp ở đó.
-from skeleton_adapter import JOINT_NAMES, TORSO_TO_SHOULDER_RATIO  # noqa: E402
+from .skeleton_adapter import JOINT_NAMES, TORSO_TO_SHOULDER_RATIO  # noqa: E402
 
 ADAPTER_R_SHOULDER = JOINT_NAMES.index("r_shoulder")
 ADAPTER_L_SHOULDER = JOINT_NAMES.index("l_shoulder")

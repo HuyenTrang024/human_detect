@@ -259,7 +259,7 @@ class SkeletonAdapter:
 
 
 # ---------------------------------------------------------------------------
-# Chạy thử nhanh: python skeleton_adapter.py
+# Chạy thử nhanh: python -m gesture.skeleton_adapter
 # ---------------------------------------------------------------------------
 if __name__ == "__main__":
     def make_pose(**points):

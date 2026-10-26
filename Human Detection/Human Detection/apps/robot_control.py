@@ -1,8 +1,8 @@
 """
 robot_control.py - Chạy camera -> DD-Net -> lệnh di chuyển cho robot.
 
-    python robot_control.py --ckpt checkpoints/scratch_f16/best.pt --backend print --show
-    python robot_control.py --ckpt checkpoints/scratch_f16/best.pt --backend ros2 --camera 0
+    python -m apps.robot_control --ckpt checkpoints/scratch_f16/best.pt --backend print --show
+    python -m apps.robot_control --ckpt checkpoints/scratch_f16/best.pt --backend ros2 --camera 0
 
 Luôn chạy thử bằng --backend print (robot không động) trước khi nối robot thật.
 
@@ -24,9 +24,9 @@ from typing import Dict, Optional
 
 import cv2
 
-import config
-from camera_source import open_source
-from gesture_recognizer import GestureRecognizer
+from gesture import config
+from .camera_source import open_source
+from gesture.gesture_recognizer import GestureRecognizer
 
 
 # ---------------------------------------------------------------------------

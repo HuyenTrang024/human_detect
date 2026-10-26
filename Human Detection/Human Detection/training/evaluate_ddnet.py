@@ -16,8 +16,8 @@ In ra:
 Ghi ra cạnh checkpoint: results_<split>.json, predictions_<split>.csv, confusion_<split>.png
 
 Ví dụ:
-    python evaluate_ddnet.py --ckpt checkpoints/scratch_f16/best.pt --split test
-    python evaluate_ddnet.py --ckpt checkpoints/scratch_f16/best.pt --split val
+    python -m training.evaluate_ddnet --ckpt checkpoints/scratch_f16/best.pt --split test
+    python -m training.evaluate_ddnet --ckpt checkpoints/scratch_f16/best.pt --split val
 """
 
 from __future__ import annotations
@@ -34,9 +34,9 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-import config
-from ddnet_model import DDNet, load_checkpoint
-from gesture_dataset import Clip, EvalWindowDataset, load_split_clips
+from gesture import config
+from gesture.ddnet_model import DDNet, load_checkpoint
+from .gesture_dataset import Clip, EvalWindowDataset, load_split_clips
 
 
 # ---------------------------------------------------------------------------

@@ -14,7 +14,7 @@ from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import Image
 from std_msgs.msg import Header
 
-from .image_utils import bgr_to_imgmsg
+from ..utils.image_utils import bgr_to_imgmsg
 
 
 class VideoPublisher(Node):

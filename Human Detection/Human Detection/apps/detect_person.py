@@ -1,6 +1,6 @@
 
-import config
-from person_crop import YoloPersonDetector
+from gesture import config
+from gesture.person_crop import YoloPersonDetector
 
 
 class PersonDetector:

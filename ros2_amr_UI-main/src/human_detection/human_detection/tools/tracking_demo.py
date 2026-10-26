@@ -2,7 +2,7 @@
 tracking_demo.py - Chạy thử tracking + dự đoán quỹ đạo trên một video, không cần ROS.
 
     cd src/human_detection
-    python -m human_detection.tracking_demo --video đường/dẫn/video.mp4 --out preview.mp4
+    python -m human_detection.tools.tracking_demo --video đường/dẫn/video.mp4 --out preview.mp4
     # mô phỏng CPU yếu chỉ xử lý 1/3 số frame:   --stride 3
     # dự đoán trên mặt đất (mét), cần đo camera:  --camera-model config/camera_model.yaml
 
@@ -23,12 +23,12 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-from .tracking.camera_model import CameraModel
-from .tracking.person_tracker import PersonTracker
-from .tracking.trajectory_predictor import TrajectoryPredictor
-from .tracking.types import Observation
+from ..tracking.camera_model import CameraModel
+from ..tracking.person_tracker import PersonTracker
+from ..tracking.trajectory_predictor import TrajectoryPredictor
+from ..tracking.types import Observation
 
-PKG_DIR = Path(__file__).resolve().parents[1]
+PKG_DIR = Path(__file__).resolve().parents[2]
 EVAL_HORIZONS = (0.5, 1.0, 2.0)
 
 

@@ -21,7 +21,7 @@ Có thêm chế độ "whole": nén/giãn CẢ clip về T frame giống code DD
 Dùng để so sánh, hoặc khi pretrain bằng JHMDB (clip chỉ dài ~1 giây).
 
 Chạy thử (in thống kê, kiểm tra dữ liệu):
-    python gesture_dataset.py --splits train val test
+    python -m training.gesture_dataset --splits train val test
 """
 
 from __future__ import annotations
@@ -39,8 +39,8 @@ import numpy as np
 import torch
 from torch.utils.data import Dataset
 
-import config
-from rocog_labels import CLASS_NAMES, VideoEntry, read_splits, subject_group
+from gesture import config
+from .rocog_labels import CLASS_NAMES, VideoEntry, read_splits, subject_group
 
 
 # ---------------------------------------------------------------------------
@@ -208,7 +208,7 @@ def load_jhmdb_clips(pkl_path: Path | str, class_names: Optional[List[str]] = No
 # ---------------------------------------------------------------------------
 def _get_mirror_fn() -> Callable[[np.ndarray], np.ndarray]:
     """Dùng mirror_joints() trong skeleton_adapter.py (đổi dấu x + hoán đổi khớp trái/phải)."""
-    from skeleton_adapter import mirror_joints
+    from gesture.skeleton_adapter import mirror_joints
 
     def fn(seq: np.ndarray) -> np.ndarray:
         try:

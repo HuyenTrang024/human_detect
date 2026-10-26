@@ -4,24 +4,24 @@ train_ddnet.py - Train DD-Net trên khung xương RoCoG.
 Ba chế độ:
 
   scratch   Train từ đầu chỉ bằng real_ground. Đây là ĐƯỜNG CƠ SỞ, luôn chạy trước.
-              python train_ddnet.py --mode scratch --name scratch_f16
+              python -m training.train_ddnet --mode scratch --name scratch_f16
 
   pretrain  Train trên một nguồn dữ liệu khác để lấy trọng số khởi đầu:
               --pretrain-data syn    : video tổng hợp RoCoG (syn_ground); chỉ lấy các lớp có trong CLASS_NAMES (5 lớp).
                                        Cần chạy trước:
-                                       python extract_keypoints.py --splits syn_train syn_val --max-per-class 500
+                                       python -m training.extract_keypoints --splits syn_train syn_val --max-per-class 500
               --pretrain-data jhmdb  : dữ liệu JHMDB có sẵn trong repo DD-Net
                                        (git clone https://github.com/fandulu/DD-Net,
                                         file DD-Net/data/JHMDB/GT_train_1.pkl)
-              python train_ddnet.py --mode pretrain --pretrain-data syn --name pre_syn
-              python train_ddnet.py --mode pretrain --pretrain-data jhmdb \
+              python -m training.train_ddnet --mode pretrain --pretrain-data syn --name pre_syn
+              python -m training.train_ddnet --mode pretrain --pretrain-data jhmdb \
                      --jhmdb-dir DD-Net/data/JHMDB --name pre_jhmdb
 
   finetune  Nạp checkpoint pretrain, thay đầu phân loại thành số lớp của CLASS_NAMES (5 lớp), train trên real_ground
             theo 2 giai đoạn:
               1) đóng băng backbone, chỉ train đầu phân loại (--freeze-epochs, lr = --lr)
               2) mở băng toàn bộ, lr nhỏ hơn (--lr * --finetune-lr-mult)
-              python train_ddnet.py --mode finetune --pretrained checkpoints/pre_syn/best.pt --name ft_syn
+              python -m training.train_ddnet --mode finetune --pretrained checkpoints/pre_syn/best.pt --name ft_syn
 
 Mỗi epoch: train trên cửa sổ ngẫu nhiên (có augment), đánh giá VAL theo từng video
 (trung bình xác suất nhiều cửa sổ). Lưu checkpoint tốt nhất theo độ chính xác val theo video
@@ -34,7 +34,7 @@ Kết quả trong checkpoints/<name>/:
   results_val.json     báo cáo chi tiết trên val của best.pt
 
 Sau khi đã chốt cấu hình, có thể train lại trên train+val (204 video) với số epoch cố định:
-    python train_ddnet.py --mode scratch --train-splits train_full --val-split none \
+    python -m training.train_ddnet --mode scratch --train-splits train_full --val-split none \
            --epochs <epoch tốt nhất> --name final_scratch
 """
 
@@ -53,13 +53,13 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-import config
-from ddnet_model import DDNet, load_pretrained, save_checkpoint
-from evaluate_ddnet import evaluate, print_report
-from gesture_dataset import (Augmenter, Clip, TrainWindowDataset, class_weights,
+from gesture import config
+from gesture.ddnet_model import DDNet, load_pretrained, save_checkpoint
+from .evaluate_ddnet import evaluate, print_report
+from .gesture_dataset import (Augmenter, Clip, TrainWindowDataset, class_weights,
                              describe, load_clips, load_jhmdb_clips,
                              load_split_clips, num_joints_of, worker_init_fn)
-from rocog_labels import CLASS_NAMES, read_splits
+from .rocog_labels import CLASS_NAMES, read_splits
 
 
 # ---------------------------------------------------------------------------
@@ -72,7 +72,7 @@ def set_seed(seed: int) -> None:
 
 def current_adapter_version() -> str:
     try:
-        from extract_keypoints import adapter_version
+        from .extract_keypoints import adapter_version
         return adapter_version()
     except Exception:
         return "unknown"
@@ -325,7 +325,7 @@ def main() -> None:
     # ---------------- báo cáo cuối ----------------
     print(f"\nCheckpoint tốt nhất: epoch {best_epoch} -> {out_dir / 'best.pt'}")
     if val_clips:
-        from ddnet_model import load_checkpoint
+        from gesture.ddnet_model import load_checkpoint
         best, _ = load_checkpoint(out_dir / "best.pt", map_location=device)
         best.to(device)
         m = evaluate(best, val_clips, class_names, args.T, device, stride=args.eval_stride,
@@ -338,7 +338,7 @@ def main() -> None:
     print(f"\nLog từng epoch: {log_path}")
     if args.mode != "pretrain":
         print(f"Khi đã chốt cấu hình, đánh giá test:\n"
-              f"  python evaluate_ddnet.py --ckpt {out_dir / 'best.pt'} --split test")
+              f"  python -m training.evaluate_ddnet --ckpt {out_dir / 'best.pt'} --split test")
 
 
 if __name__ == "__main__":

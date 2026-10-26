@@ -14,12 +14,12 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Dict, List, Optional
 import cv2
-from skeleton_adapter import SkeletonAdapter
+from gesture.skeleton_adapter import SkeletonAdapter
 
 import numpy as np
 
-import config
-from rocog_labels import (VideoEntry, read_splits, resolve_video_path,
+from gesture import config
+from .rocog_labels import (VideoEntry, read_splits, resolve_video_path,
                           sample_balanced)
 
 NUM_MP_POINTS = 33
@@ -30,7 +30,7 @@ NUM_MP_POINTS = 33
 # ---------------------------------------------------------------------------
 def adapter_version() -> str:
     """Mã băm nội dung skeleton_adapter.py -> phát hiện dữ liệu trích bằng adapter cũ."""
-    import skeleton_adapter
+    from gesture import skeleton_adapter
     src = Path(skeleton_adapter.__file__).read_bytes()
     return hashlib.md5(src).hexdigest()[:10]
 
@@ -41,7 +41,7 @@ def make_pose_estimator():
     thái bám người và đòi timestamp tăng dần, nên dùng lại đối tượng giữa hai video sẽ
     lỗi hoặc làm khung xương đầu video mới bị kéo theo video trước.
     """
-    from pose_estimate import PoseEstimator
+    from gesture.pose_estimate import PoseEstimator
     return PoseEstimator()
 
 
@@ -122,7 +122,7 @@ _WORKER: Dict[str, object] = {}
 
 def _init_worker(yolo_weights: Optional[str], device: Optional[str]) -> None:
     """Mỗi tiến trình tạo YOLO một lần (model không chuyển qua lại giữa tiến trình được)."""
-    from person_crop import FullFrameDetector, PersonCropper, YoloPersonDetector
+    from gesture.person_crop import FullFrameDetector, PersonCropper, YoloPersonDetector
     detector = FullFrameDetector() if yolo_weights is None else YoloPersonDetector(yolo_weights, device=device)
     _WORKER["cropper"] = PersonCropper(detector)
     _WORKER["adapter_version"] = adapter_version()
@@ -217,7 +217,7 @@ def extract_video(video_path: Path) -> Dict[str, np.ndarray]:
 
 def readapt(npz: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
     """Tính lại joints/visible/ok/scale từ kps_raw đã lưu (sau khi sửa skeleton_adapter.py)."""
-    from skeleton_adapter import SkeletonAdapter
+    from gesture.skeleton_adapter import SkeletonAdapter
     adapter = SkeletonAdapter()
     J = None
     joints_list, vis_list, ok_list, scale_list = [], [], [], []
@@ -250,7 +250,7 @@ def readapt(npz: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
 
 def _num_joints_fallback() -> int:
     try:
-        import skeleton_adapter
+        from gesture import skeleton_adapter
         return int(getattr(skeleton_adapter, "NUM_JOINTS"))
     except Exception:
         return 15

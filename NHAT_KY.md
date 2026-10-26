@@ -27,8 +27,12 @@ Camera ─► camera node ─► /image_front ─► gesture_node ────�
 ```
 human_detect/
 ├── Human Detection/                       ← phần train model (copy từ ~/Downloads/Human Detection, 2,8 GB)
-│   ├── Human Detection/                   code gesture gốc: train_ddnet.py, gesture_recognizer.py, robot_control.py, ...
-│   │   └── checkpoints/scratch_f16/best.pt   ← DD-Net đã train (test acc 95%)
+│   ├── Human Detection/                   code train/thử nghiệm (đã chia lại thành package, xem mục 25)
+│   │   ├── gesture/                       thư viện lõi: config, skeleton_adapter, pose_estimate, person_crop, ddnet_model, gesture_recognizer
+│   │   ├── training/                      rocog_labels, extract_keypoints, gesture_dataset, train_ddnet, evaluate_ddnet, finetune_human, merge_dataset
+│   │   ├── apps/                          camera_source, demo_camera, robot_control, detect_person, test_inference
+│   │   ├── data/                          keypoints/, keypoints_v2/ (không đưa lên git)
+│   │   └── checkpoints/v2_5cls/best.pt    ← DD-Net 5 lớp đang dùng (all_test acc 99,1%); scratch_f16 là model 7 lớp cũ
 │   ├── weights/pose_landmarker_{lite,full}.task   MediaPipe Pose
 │   ├── Dataset/                           person_*, Merged_Human_Dataset, real_ground (video RoCoG)
 │   └── runs/detect/runs/detect/robot_person_detect/weights/best.pt   ← YOLO tìm người
@@ -37,19 +41,23 @@ human_detect/
 │       ├── camera/                        package C++ có sẵn
 │       └── human_detection/               package Python mới viết
 │           ├── human_detection/
-│           │   ├── gesture_node.py        ← NODE CHÍNH: nhận diện cử chỉ + ByteTrack + khoá người chủ
-│           │   ├── trajectory_node.py     ← NODE: dự đoán quỹ đạo từng người (nhận /people/tracks)
-│           │   ├── tracking_demo.py       chạy thử tracking + quỹ đạo trên video, KHÔNG cần ROS
-│           │   ├── gesture/               pipeline copy từ code gốc (sửa import cho package)
+│           │   ├── nodes/                 các node ROS (từ mục 26)
+│           │   │   ├── gesture_node.py    ← NODE CHÍNH: nhận diện cử chỉ + ByteTrack + khoá người chủ
+│           │   │   ├── trajectory_node.py ← NODE: dự đoán quỹ đạo từng người (nhận /people/tracks)
+│           │   │   ├── record_node.py     thu dataset cử chỉ từ camera robot
+│           │   │   └── video_publisher.py công cụ test: phát video/webcam lên /image_front
+│           │   ├── gesture/               pipeline copy từ code gốc (sửa import cho package) + command_filter.py
 │           │   ├── tracking/              Python thuần, không import ROS: person_tracker (YOLO+ByteTrack), target_selector
 │           │   │                          (khoá người chủ), kalman_cv, trajectory_predictor, camera_model, types
-│           │   ├── image_utils.py         chuyển sensor_msgs/Image <-> numpy
-│           │   └── video_publisher.py     công cụ test: phát video/webcam lên /image_front
+│           │   ├── utils/image_utils.py   chuyển sensor_msgs/Image <-> numpy
+│           │   └── tools/tracking_demo.py chạy thử tracking + quỹ đạo trên video, KHÔNG cần ROS
 │           ├── config/gesture_params.yaml, bytetrack_person.yaml, camera_model.yaml, trajectory_params.yaml
 │           ├── launch/gesture.launch.py, people_tracking.launch.py
 │           ├── models/best.pt, ddnet_gesture.pt, pose_landmarker_lite.task
-│           ├── requirements.txt, setup_venv.sh   ← tạo venv để chạy trên robot
-│           └── setup.py, setup.cfg, package.xml, resource/, README.md
+│           ├── scripts/setup_venv.sh      ← tạo venv để chạy trên robot
+│           ├── docs/INTERFACE.md          topic và bảng số hiệu /gesture cho web/backend
+│           └── requirements.txt, setup.py, setup.cfg, package.xml, resource/, README.md
+│       (ngoài ra có README.md ở gốc workspace `ros2_amr_UI-main/`)
 ├── install_ros2_jazzy.sh                  script cài ROS 2 + thư viện
 └── NHAT_KY.md                             file này
 ```
@@ -303,6 +311,47 @@ human_detect/
     - `rocog_labels.py` chạy thật bằng env `human_detect`: `all_train` 187, `all_val` 54, `all_test` 117 video, đủ 5 lớp mỗi tập (khớp mục 21).
     - `BAO_CAO_HUAN_LUYEN.md` và bảng "Accuracy test 95%" trong `README.md` là của model 7 lớp cũ; sẽ cập nhật sau khi train xong `v2_5cls`.
 
+### 2026-10-26
+
+25. **Chia lại thư mục train `Human Detection/Human Detection/` thành package** (trước đây 20 file `.py` nằm phẳng):
+    - `gesture/` (thư viện lõi dùng cả khi train lẫn trên robot), `training/` (dữ liệu, train, đánh giá), `apps/` (demo, điều khiển robot, camera),
+      `data/` (keypoint, không đưa lên git). Thêm `README.md` mô tả. Dùng `git mv` nên giữ được lịch sử.
+    - Import đổi sang dạng package (`from . import config`, `from gesture import config`). `gesture/config.py`: `PROJECT_DIR` lên một cấp,
+      `KEYPOINT_DIR` = `data/keypoints`. `.gitignore` ở gốc sửa theo (`data/`).
+    - **Cách chạy mới là dạng module, từ thư mục `Human Detection/Human Detection/`:** `python -m training.train_ddnet ...`,
+      `python -m training.evaluate_ddnet ...`, `python -m training.extract_keypoints ...`, `python -m apps.demo_camera ...`.
+      Các lệnh `python train_ddnet.py ...` trong mục 20 và 21 phải đổi theo; `--kp-dir keypoints_v2` thành `--kp-dir data/keypoints_v2`.
+    - `merge_dataset.py` và `finetune_human.py` là script chạy thẳng khi import (không có `if __name__ == "__main__"`), không import như thư viện.
+      (Lúc kiểm tra tôi lỡ import `merge_dataset` nên nó tạo thư mục rỗng `Dataset/`; đã xoá.)
+    - Mới kiểm tra tĩnh (biên dịch + mọi import tương đối trỏ đúng file); **chưa chạy thật** vì máy này không có numpy/torch. Cần chạy thử một lệnh train hoặc demo.
+    - `gesture/` ở đây và `human_detection/gesture/` trong gói ROS vẫn là hai bản riêng (bản ROS có `command_filter.py`, `config.py` hơi khác);
+      sửa bên này phải đồng bộ sang bên kia.
+
+26. **Chia lại workspace `ros2_amr_UI-main` (package `human_detection`)**:
+    - Trong `human_detection/human_detection/`: `nodes/` (gesture_node, trajectory_node, record_node, video_publisher), `utils/` (image_utils),
+      `tools/` (tracking_demo); `gesture/` và `tracking/` giữ nguyên. Ngoài package: `scripts/setup_venv.sh`, `docs/INTERFACE.md`.
+      Thêm `README.md` ở gốc workspace. Package `camera` không đụng tới.
+    - `setup.py`: danh sách package thêm `nodes`, `tools`, `utils`; `console_scripts` trỏ tới `human_detection.nodes.*`.
+      Import trong node đổi thành `..gesture`, `..tracking`, `..utils`. `setup_venv.sh` sửa đường dẫn tới `requirements.txt`.
+    - **Tên package, tên executable, topic, launch và config không đổi** (so từng node với bản git: chỉ khác các dòng import). `ros2 launch/run` chạy như cũ.
+    - Cách chạy mới: `./scripts/setup_venv.sh`; `python -m human_detection.tools.tracking_demo ...`.
+    - **Chưa chạy `colcon build` sau khi chia** (máy này không có ROS); cần build và chạy thử `gesture.launch.py`.
+    - Còn lại: `camera/lib/libunilidar_sdk2.a` (SDK lidar, mục 1) vẫn nằm trong package camera; `models/ddnet_gesture_7cls.pt.bak` chưa nằm trong git.
+
+27. **Tài liệu giao diện cho web/backend** `src/human_detection/docs/INTERFACE.md`: topic chính `/gesture` (`std_msgs/Int32`, Reliable depth 10),
+    bảng 0 MoveForward, 1 Halt, 2 MoveInReverse, 3 Left, 4 Right, 5 None; các topic phụ; cách nối bằng rosbridge/roslibjs hoặc rclpy.
+    - Lưu ý trong tài liệu: mặc định `enable_target_lock: false`, nên cử chỉ khác `Halt` không bị chặn trước khi khoá; chỉ khi bật khoá mới bị đổi thành `None`.
+    - `README.md` cũ của package có dòng rác `ip: 1` ở cuối, chưa xoá.
+
+28. **Xác nhận model đang dùng và thử bỏ Halt robot (thất bại, đã bỏ)**:
+    - `v2_5cls` (mục 21) đã train xong: `all_test` 117 video, **accuracy theo video 99,1%**, macro F1 0,993, accuracy theo cửa sổ 97,1% (525 cửa sổ).
+    - `models/ddnet_gesture.pt` trong gói ROS **giống hệt** `checkpoints/v2_5cls/best.pt` (MD5 `2775e4fa…`); `ddnet_gesture_7cls.pt.bak` giống `scratch_f16/best.pt`
+      (MD5 `3ada7ac1…`). Cả hai file trong `models/` có ngày sửa 23/10 11:09, tức việc thay model xảy ra trước ngày này.
+    - **Thí nghiệm:** train lại bỏ các video Halt robot (S11–S17) khỏi train và val (31 + 11 video), lưu sang `checkpoints/v2_5cls_noRobotHalt/` để không đè model cũ.
+      Kết quả trên `all_test` **kém hơn** `v2_5cls`, nên bỏ: đã xoá thư mục checkpoint đó và hai file chia `all_{train,val}_noRobotHalt.txt`.
+      Kết luận: video Halt robot có ích, giữ trong train. Muốn cải thiện Halt thì thu thêm dữ liệu hoặc xem Halt bị nhầm sang lớp nào trong `confusion_all_test.png`.
+      (Cần lưu ý: `all_test` vẫn còn 21 video Halt robot mà model thí nghiệm chưa thấy, nên so sánh này có lợi cho model cũ.)
+
 ## Trạng thái hiện tại
 
 - [x] ROS 2 Jazzy cài xong; thư viện Python nằm trong venv `~/gesture_venv`
@@ -325,7 +374,9 @@ human_detect/
 - [x] Cài thư viện train trên máy `trangto` (mục 18) và viết `record_node` có nút tạm dừng / thủ công (mục 19)
 - [x] Làm sạch dataset robot (230 clip), bỏ lớp None/FollowMe, sửa `person_crop.py`, chia theo người (mục 21)
 - [x] Trích keypoint vào `keypoints_v2/`; loại clip `S14 MoveInReverse take03` (ok=0,027) sang `rejected/` (mục 21)
-- [ ] Train `v2_5cls` và đánh giá trên `all_test` (mục 21); chép `best.pt` thành `ddnet_gesture.pt` trong `models/`
+- [x] Train `v2_5cls`, `all_test` acc 99,1%; đã chép `best.pt` thành `models/ddnet_gesture.pt` (mục 21, 28)
+- [ ] Chạy thử code sau khi chia lại thư mục: `python -m training...` / `apps...` (mục 25) và `colcon build` + `gesture.launch.py` (mục 26)
+- [x] Viết `docs/INTERFACE.md` cho web/backend (mục 27); [ ] báo nhóm web/backend dùng bảng số hiệu 0–5 mới
 - [x] Phía robot: tắt khoá người chủ, `lock_gesture` mặc định `Right` (mục 22)
 - [ ] Thử ngưỡng `conf_threshold`/`confirm_count` trên robot vì không còn lớp None
 - [ ] Sửa bản copy `person_crop.py` trong package ROS cho giống bản train (nếu muốn)
@@ -342,7 +393,7 @@ human_detect/
      user@IP_robot:~/gesture_ws/src/human_detection/
 
    # Trên robot
-   ~/gesture_ws/src/human_detection/setup_venv.sh      # sudo 1 lần; chỉ cài thêm python3-venv / vision-msgs nếu thiếu
+   ~/gesture_ws/src/human_detection/scripts/setup_venv.sh      # sudo 1 lần; chỉ cài thêm python3-venv / vision-msgs nếu thiếu
    source /opt/ros/jazzy/setup.bash
    source ~/gesture_venv/bin/activate
    cd ~/gesture_ws && python3 -m colcon build --symlink-install
@@ -378,7 +429,7 @@ human_detect/
    ros2 topic hz /people/tracks              # tốc độ xử lý thật, dùng để chỉnh track_buffer
    ```
    Thử: một người, hai người (người gần không phải người chủ), người đi chéo nhau (có đổi ID không), người chủ ra khỏi khung rồi quay lại.
-   Chạy `python -m human_detection.tracking_demo --video ... --stride 3` (từ `src/human_detection`) để mô phỏng CPU xử lý chậm.
+   Chạy `python -m human_detection.tools.tracking_demo --video ... --stride 3` (từ `src/human_detection`) để mô phỏng CPU xử lý chậm.
 6. Thống nhất với nhóm: có publish thêm depth của RealSense từ package `camera` không (để ước lượng khoảng cách chính xác hơn), có `/odom` để bù
    chuyển động robot không, và ai quyết định dừng/đổi hướng khi người sắp vào đường đi.
 

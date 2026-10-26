@@ -45,7 +45,7 @@ Bảng cử chỉ → vận tốc nằm ở `human_detection/gesture/command_fil
 để không làm hỏng các gói ROS cài từ apt trên robot.
 
 ```bash
-./setup_venv.sh                 # tạo ~/gesture_venv (hỏi sudo một lần để cài python3-venv, ros-jazzy-vision-msgs)
+./scripts/setup_venv.sh                 # tạo ~/gesture_venv (hỏi sudo một lần để cài python3-venv, ros-jazzy-vision-msgs)
 ```
 
 Script tạo venv với `--system-site-packages`, nên venv vẫn thấy rclpy và numpy 1.26 của apt. Script cũng đặt

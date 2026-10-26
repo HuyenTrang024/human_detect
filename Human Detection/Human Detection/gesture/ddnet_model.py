@@ -26,7 +26,7 @@ Sơ đồ (f = filters, mặc định 16 = bản "lite"):
                          GlobalMaxPool -> d1D(128) Dropout -> d1D(128) Dropout -> Linear(num_classes)
 
 Chạy thử:
-    python ddnet_model.py
+    python -m gesture.ddnet_model
 """
 
 from __future__ import annotations
@@ -39,9 +39,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import config
-
-
+from . import config
 # ---------------------------------------------------------------------------
 # Đặc trưng
 # ---------------------------------------------------------------------------
