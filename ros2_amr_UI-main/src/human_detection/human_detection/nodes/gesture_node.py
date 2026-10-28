@@ -44,10 +44,14 @@ REASON_ASCII = {
 }
 
 
-def draw_panel(frame, res) -> None:
-    """Một dòng ở góc ảnh: cử chỉ dự đoán và độ tin cậy (%). Chưa có dự đoán thì hiện lý do."""
+def draw_panel(frame, res, conf_threshold: float = 0.8) -> None:
+    """Một dòng ở góc ảnh: cử chỉ dự đoán và độ tin cậy (%). Chưa có dự đoán thì hiện lý do.
+    Xác suất < conf_threshold thì hiện "None" (kèm % để dễ chỉnh ngưỡng)."""
     reason = REASON_ASCII.get(res.reason, res.reason) if res.person else 'no person'
-    text = f"{res.label} {res.prob * 100:.0f}%" if res.label else reason or "..."
+    if res.label and res.prob < conf_threshold:
+        text = f"None ({res.prob * 100:.0f}%)"
+    else:
+        text = f"{res.label} {res.prob * 100:.0f}%" if res.label else reason or "..."
     (tw, th), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
     cv2.rectangle(frame, (0, 0), (tw + 16, th + 16), (0, 0, 0), -1)
     cv2.putText(frame, text, (8, th + 8), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
@@ -325,7 +329,7 @@ class GestureNode(Node):
             x1, y1, x2, y2 = crop.person_box.astype(int)
             cv2.rectangle(img, (x1, y1), (x2, y2),
                           (0, 255, 0) if crop.detected else (0, 165, 255), 2)
-        draw_panel(img, res)
+        draw_panel(img, res, self.filter.conf)
         if self.selector is not None:
             cid = self.selector.commander_id
             cv2.putText(img, f"{self.selector.state}" + ("" if cid is None else f" id{cid}"),

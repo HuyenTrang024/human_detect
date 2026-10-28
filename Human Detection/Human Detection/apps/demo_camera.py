@@ -24,15 +24,18 @@ from .camera_source import open_source
 from gesture.gesture_recognizer import GestureRecognizer
 
 
-def draw_panel(frame, res, names) -> None:
+def draw_panel(frame, res, names, conf: float) -> None:
     h = 30 + 24 * len(names)
     cv2.rectangle(frame, (0, 0), (300, h), (0, 0, 0), -1)
-    title = f"{res.label} ({res.prob * 100:.0f}%)" if res.label else res.reason or "..."
+    if res.label and res.prob < conf:
+        title = f"None ({res.prob * 100:.0f}%)"
+    else:
+        title = f"{res.label} ({res.prob * 100:.0f}%)" if res.label else res.reason or "..."
     cv2.putText(frame, title, (8, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
     for i, n in enumerate(names):
         p = float(res.probs[i]) if res.probs is not None else 0.0
         y = 30 + 24 * i + 16
-        best = res.label == n
+        best = res.label == n and res.prob >= conf
         cv2.putText(frame, n, (8, y), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
                     (0, 255, 0) if best else (200, 200, 200), 1)
         cv2.rectangle(frame, (130, y - 11), (130 + int(160 * p), y + 2),
@@ -43,6 +46,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description="Thử nhận diện cử chỉ qua camera")
     ap.add_argument("--ckpt", required=True)
     ap.add_argument("--camera", default="0", help="realsense | chỉ số webcam | đường dẫn video")
+    ap.add_argument("--conf", type=float, default=0.8, help="xác suất thấp hơn thì hiển thị None")
     ap.add_argument("--no-yolo", action="store_true", help="bỏ YOLO (nhanh hơn, khác lúc train)")
     ap.add_argument("--no-show", action="store_true", help="không mở cửa sổ, chỉ in ra terminal")
     ap.add_argument("--print-every", type=float, default=0.5, help="in ra terminal mỗi bấy nhiêu giây")
@@ -70,7 +74,9 @@ def main() -> None:
 
             if now - t_print >= args.print_every:
                 t_print = now
-                if res.label:
+                if res.label and res.prob < args.conf:
+                    print(f"=> {'None':<14} {res.prob * 100:3.0f}%   (dưới ngưỡng {args.conf})", flush=True)
+                elif res.label:
                     top = "  ".join(f"{names[i]}={res.probs[i] * 100:3.0f}%"
                                     for i in res.probs.argsort()[::-1][:3])
                     print(f"=> {res.label:<14} {res.prob * 100:3.0f}%   [{top}]", flush=True)
@@ -78,7 +84,7 @@ def main() -> None:
                     print(f"..  {res.reason}" + ("" if res.person else " (không thấy người)"), flush=True)
 
             if not args.no_show:
-                draw_panel(frame, res, names)
+                draw_panel(frame, res, names, args.conf)
                 cv2.imshow("DD-Net gesture demo", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                     break

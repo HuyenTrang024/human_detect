@@ -10,7 +10,7 @@ training/    Chuẩn bị dữ liệu, train, đánh giá
              finetune_human (YOLO), merge_dataset
 apps/        Chạy thử và điều khiển
              camera_source, demo_camera, robot_control, detect_person, test_inference
-checkpoints/ Model DD-Net đã train (v2_5cls là bản 5 lớp đang dùng trên robot)
+checkpoints/ Model DD-Net đã train (v3_5cls là bản 5 lớp đang dùng trên robot)
 data/        Keypoint .npz sinh ra khi trích dữ liệu (không đưa lên git)
 ```
 
@@ -23,8 +23,8 @@ Sửa ở đây thì phải đồng bộ sang đó.
 python -m training.extract_keypoints --splits train val test
 python -m training.train_ddnet --mode scratch --name scratch_f16
 python -m training.evaluate_ddnet --ckpt checkpoints/scratch_f16/best.pt --split test
-python -m apps.demo_camera --ckpt checkpoints/v2_5cls/best.pt
-python -m apps.robot_control --ckpt checkpoints/v2_5cls/best.pt --backend print --show
+python -m apps.demo_camera --ckpt checkpoints/v3_5cls/best.pt
+python -m apps.robot_control --ckpt checkpoints/v3_5cls/best.pt --backend print --show
 ```
 
 `training/merge_dataset.py` và `training/finetune_human.py` là script chạy thẳng khi import,
