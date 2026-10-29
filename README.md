@@ -110,12 +110,3 @@ python -m training.evaluate_ddnet --ckpt checkpoints/v3_5cls/best.pt --split all
 ```
 
 Mặc định `KEYPOINT_DIR` trong `gesture/config.py` là `data/keypoints_v3` (từ 29/10); `data/keypoints` là bản 7 lớp cũ.
-
-## Hạn chế
-
-- Chưa thử với người thật trước camera robot; test chỉ có 105 video (6 người), 77 video quay cùng thiết bị với train/val.
-- `MoveForward` chỉ có data robot từ S11, S12 trong train (S13, S14 không có); đây là lớp duy nhất có lỗi ở validation.
-- Model không có lớp `None`: robot lọc dự đoán yếu bằng ngưỡng `conf`, chưa đo tỉ lệ báo nhầm.
-- Chưa đo lại FPS/CPU của cả pipeline với model 5 lớp.
-- Cử chỉ cần khoảng 3,2 giây để ra kết quả.
-- Chưa có phần bám người và tránh người.

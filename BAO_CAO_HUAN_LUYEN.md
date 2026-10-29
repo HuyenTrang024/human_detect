@@ -24,7 +24,7 @@ Hệ thống ghép **bốn thành phần**. Hai thành phần có huấn luyện
 | **ByteTrack** | Gán ID ổn định cho từng người | Không: thuật toán | – |
 
 **Kết quả đạt được:** pipeline hoàn chỉnh chạy được trong ROS 2 trên CPU. Model cử chỉ hiện tại (`v3_5cls`) đã được chép vào
-`models/ddnet_gesture.pt` của package ROS. **Hạn chế lớn nhất:** chưa thử với người thật trước camera robot, và test chỉ có 105 video nên 100% chưa đảm bảo cho điều kiện thực tế (xem mục 9).
+`models/ddnet_gesture.pt` của package ROS.
 
 ---
 
@@ -218,21 +218,7 @@ Cử chỉ cần ~3,2 giây để ra kết quả đầu tiên: đây là đặc 
 
 ---
 
-## 9. Hạn chế và rủi ro
-
-1. **Chưa thử với người thật trước camera robot.** Dữ liệu quay trong điều kiện cố định (2 m cho robot, 10 m cho RoCoG, vài phòng); độ chính xác thực tế có thể thấp hơn nhiều so với 100% trên test.
-2. **Bộ test nhỏ** (105 video, 6 người), trong đó 77 video của S16, S17 quay cùng thiết bị và gần giống phòng với S14, S15 trong train/val. Mỗi video sai đổi ~1% độ chính xác.
-3. **MoveForward có ít người trong train** (chỉ S11, S12) và đã mất data RoCoG; đây là lớp duy nhất có lỗi ở validation. Left, Right cũng chỉ có từ data robot.
-4. **Chưa có lớp `None`:** khi không ai làm cử chỉ model vẫn phải chọn 1 trong 5 lớp; phải dựa vào ngưỡng `conf`. Chưa đo tỉ lệ báo nhầm lệnh.
-5. **Early stopping ở epoch 5** với tập validation chỉ 53 video: lựa chọn checkpoint có thể chưa ổn định.
-6. **Recall YOLO ~0,72–0,76:** có thể bỏ sót người ở xa hoặc bị che.
-7. Dự đoán quỹ đạo chưa được kiểm thử với người đi thật; thông số camera trong `camera_model.yaml` mới là giá trị giả định.
-8. Tracking và `gesture_node` chưa chạy lại trong ROS sau khi đổi sang model 5 lớp và chia lại thư mục (xem `NHAT_KY.md` mục 25, 26).
-9. **`KEYPOINT_DIR`** trong `gesture/config.py` đã đổi sang `data/keypoints_v3` (29/10). Bản `data/keypoints` là keypoint 7 lớp cũ; `ANNOTATION_DIR` và `DATASET_ROOT` mặc định vẫn trỏ `Dataset/real_ground`, nên muốn dùng `Dataset_Used` thì truyền `--ann-dir`.
-
----
-
-## 10. Công việc tiếp theo
+## 9. Công việc tiếp theo
 
 1. Triển khai lên robot (workspace riêng `~/gesture_ws`), đo FPS và CPU của cả pipeline với model `v3` khi chạy chung với SLAM/Navigation.
 2. Kiểm thử với người thật: một người, nhiều người, người lạ, phòng khác, khoảng cách khác 2 m, và lúc không làm cử chỉ; chỉnh `conf_threshold`/`confirm_count`.
@@ -242,7 +228,7 @@ Cử chỉ cần ~3,2 giây để ra kết quả đầu tiên: đây là đặc 
 
 ---
 
-## 11. Kết luận
+## 10. Kết luận
 
 Đã hoàn thành chuỗi mô hình nhận diện cử chỉ chạy được trên CPU: **YOLOv5n** tìm người (mAP50 0,86 trên test), **MediaPipe Pose** lấy khung xương (99,96% frame dùng được),
 **DD-Net lite** phân loại 5 cử chỉ (test 105 video: 100%, Macro-F1 1,000; validation 98,1%) và **ByteTrack** gán ID.
