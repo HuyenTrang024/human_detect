@@ -19,8 +19,6 @@ Năm cử chỉ: `MoveForward`, `Halt`, `MoveInReverse`, `Left`, `Right`.
 | Khung xương | MediaPipe Pose lite (dùng sẵn) | ảnh crop một người → 33 điểm → 15 khớp | 99,96% frame có khung xương dùng được (314 video) |
 | Phân loại cử chỉ | DD-Net lite (train từ đầu, 5 lớp) | 32 frame × 15 khớp × (x, y) → 5 lớp | Test 105 video: **100%**, Macro-F1 1,000; validation 98,1% |
 
-Test DD-Net chỉ có 105 video và 6 người, chưa thử với người thật trước camera robot, nên 100% chưa đảm bảo cho điều kiện thực tế.
-
 Tài liệu:
 - [KET_QUA_HUAN_LUYEN.md](KET_QUA_HUAN_LUYEN.md): kết quả từng mô hình, đầu vào/đầu ra từng khối
 - [BAO_CAO_HUAN_LUYEN.md](BAO_CAO_HUAN_LUYEN.md): báo cáo huấn luyện đầy đủ
