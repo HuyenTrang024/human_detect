@@ -4,7 +4,8 @@
 
 **Nhận diện cử chỉ (gesture) của người trước camera trước để điều khiển robot AMR**, chạy trong ROS 2.
 
-- Có 7 cử chỉ (bộ dữ liệu RoCoG-v2): Advance, Attention, Rally, MoveForward, Halt, FollowMe, MoveInReverse.
+- Ban đầu có 7 cử chỉ (bộ dữ liệu RoCoG-v2): Advance, Attention, Rally, MoveForward, Halt, FollowMe, MoveInReverse.
+  **Từ 2026-10-23 model chỉ còn 5 lớp:** MoveForward, Halt, MoveInReverse, Left, Right (train bằng RoCoG + video quay bằng camera robot, xem mục 21, 29).
 - Package `camera` (C++, có sẵn) đọc 2 camera Intel RealSense và publish ảnh lên `/image_front` và `/image_rear`.
 - Package `human_detection` (Python, mới viết) subscribe `/image_front`, nhận diện cử chỉ, rồi publish lệnh.
 - **Mở rộng (2026-10-19):** theo dõi mọi người bằng ByteTrack (ID ổn định), chỉ nghe lệnh của "người chủ" đã khoá bằng cử chỉ `FollowMe`,
@@ -31,10 +32,11 @@ human_detect/
 │   │   ├── gesture/                       thư viện lõi: config, skeleton_adapter, pose_estimate, person_crop, ddnet_model, gesture_recognizer
 │   │   ├── training/                      rocog_labels, extract_keypoints, gesture_dataset, train_ddnet, evaluate_ddnet, finetune_human, merge_dataset
 │   │   ├── apps/                          camera_source, demo_camera, robot_control, detect_person, test_inference
-│   │   ├── data/                          keypoints/, keypoints_v2/ (không đưa lên git)
-│   │   └── checkpoints/v2_5cls/best.pt    ← DD-Net 5 lớp đang dùng (all_test acc 99,1%); scratch_f16 là model 7 lớp cũ
+│   │   ├── data/                          keypoints/, keypoints_v2/, keypoints_v3/ (không đưa lên git)
+│   │   └── checkpoints/v3_5cls/best.pt    ← DD-Net 5 lớp đang dùng (all_test acc 100%, 105 video); v2_5cls, scratch_f16 (7 lớp) là bản cũ
 │   ├── weights/pose_landmarker_{lite,full}.task   MediaPipe Pose
-│   ├── Dataset/                           person_*, Merged_Human_Dataset, real_ground (video RoCoG)
+│   ├── Dataset/                           person_*, Merged_Human_Dataset, real_ground (video RoCoG + robot)
+│   │   └── Dataset_Used/                  316 video model thật sự dùng (train 158, val 53, test 105), xếp đúng cấu trúc code đọc (mục 31)
 │   └── runs/detect/runs/detect/robot_person_detect/weights/best.pt   ← YOLO tìm người
 ├── ros2_amr_UI-main/                      ← ROS 2 WORKSPACE (chạy colcon build ở đây)
 │   └── src/
@@ -59,6 +61,9 @@ human_detect/
 │           └── requirements.txt, setup.py, setup.cfg, package.xml, resource/, README.md
 │       (ngoài ra có README.md ở gốc workspace `ros2_amr_UI-main/`)
 ├── install_ros2_jazzy.sh                  script cài ROS 2 + thư viện
+├── BAO_CAO_HUAN_LUYEN.md                  báo cáo huấn luyện
+├── KET_QUA_HUAN_LUYEN.md                  kết quả YOLO, MediaPipe, DD-Net + đầu vào/đầu ra từng khối
+├── DATASET_ROBOT.md                       mô tả dataset (robot + RoCoG), chia tập theo người
 └── NHAT_KY.md                             file này
 ```
 
@@ -352,6 +357,46 @@ human_detect/
       Kết luận: video Halt robot có ích, giữ trong train. Muốn cải thiện Halt thì thu thêm dữ liệu hoặc xem Halt bị nhầm sang lớp nào trong `confusion_all_test.png`.
       (Cần lưu ý: `all_test` vẫn còn 21 video Halt robot mà model thí nghiệm chưa thấy, nên so sánh này có lợi cho model cũ.)
 
+### 2026-10-28
+
+29. **Thay dữ liệu MoveForward và train lại `v3_5cls`.**
+    - **Dataset (đối chiếu từ file trên đĩa, chi tiết ở [DATASET_ROBOT.md](DATASET_ROBOT.md)):**
+      - Bộ MoveForward robot được thay bằng 45 clip mới (S11, S12, S15, S16, S17; **S13 và S14 không có clip MoveForward**). Bản cũ giữ ở
+        `Dataset/real_ground/old_MoveForward_backup/`. Thêm `S12_2m_MoveForward_take06.mp4` vào `rejected/`. Robot còn **230 clip** (mục 21 ghi 229, lúc đó MoveForward là 44).
+      - 43 video MoveForward của RoCoG (train 23, val 6, test 14) bị gỡ khỏi `all_train/val/test.txt`; bản cũ là `all_*.txt.bak_rocog_mf`.
+        Nên MoveForward giờ chỉ có data robot (train 17, val 10, test 18).
+      - Lý do thay MoveForward và gỡ MoveForward RoCoG **chưa được ghi lại ở đâu**; mục này chỉ ghi hiện trạng.
+    - **Trích keypoint** vào `data/keypoints_v3/` (316 video, không video nào có `ok_ratio` < 0,5), rồi **train `v3_5cls`** (`all_train` 158 video, `scratch`, 16 filters, seed 42):
+      tốt nhất ở epoch 5, dừng ở epoch 45 (~14 giây trên GPU).
+    - **Kết quả:** val (53 video) accuracy 98,1% (1 video MoveForward của S15 bị đoán Right); **`all_test` (105 video) accuracy 100%**, macro F1 1,000, accuracy theo cửa sổ 98,7% (455 cửa sổ).
+      Tập test của `v3` khác tập test của `v2` (117 video, còn MoveForward RoCoG) nên **không so trực tiếp** được 99,1% với 100%.
+    - **Đã chép model vào ROS:** `models/ddnet_gesture.pt` giống hệt `checkpoints/v3_5cls/best.pt`; bản `v2` giữ ở `models/ddnet_gesture_v2_5cls.pt.bak`.
+    - `README.md` của thư mục train đổi trỏ sang `v3_5cls`.
+
+30. **Hiển thị `None` khi xác suất thấp.** Model không có lớp `None`, nên khi dự đoán dưới ngưỡng thì chỉ **hiển thị** `None (xx%)` để dễ chỉnh ngưỡng:
+    - `apps/demo_camera.py`: thêm tham số `--conf` (mặc định 0,8); dưới ngưỡng thì vẽ và in `None`.
+    - `nodes/gesture_node.py`: `draw_panel(img, res, self.filter.conf)` lấy ngưỡng từ `CommandFilter`.
+    - Chỉ đổi phần hiển thị (so với commit trước chỉ khác các dòng vẽ/in); logic lọc lệnh trong `command_filter.py` không đổi trong lần sửa này. Chưa thử trên robot.
+
+### 2026-10-29
+
+31. **Xếp lại dataset đúng cấu trúc code đọc, viết lại tài liệu, đo thêm số liệu.**
+    - **`Dataset/Dataset_Used/`** (bản sao, 601 MB): đúng 316 video model dùng (train 158, val 53, test 105; robot 230 + RoCoG 86),
+      `real/{ground,robot}/<Lớp>/...` và `annotations/all_{train,val,test}.txt` (đã bỏ các dòng lớp không dùng).
+      Kiểm tra bằng chính code: `python -m training.rocog_labels --ann-dir ../Dataset/Dataset_Used/annotations --dataset-root ../Dataset/Dataset_Used --splits all_train all_val all_test --check-files`
+      → đọc được cả 3 file, tìm thấy 316/316 video (kể cả khi chỉ dùng đường dẫn đúng, không cần tìm theo tên file), không video hay người nào trùng giữa các tập;
+      cả 316 video đều có `.npz` trong `keypoints_v3`. (Lúc đầu tôi tạo nhầm `Train_Videos/` chỉ có train; đã xoá.)
+    - **`DATASET_ROBOT.md`** viết lại theo dữ liệu thật: thêm bảng tổng quan hai dataset (robot + RoCoG), ID người và số video theo từng tập, bảng chi tiết train/val/test.
+      Sửa các số cũ sai: MoveForward 45 (không phải 44), robot train/val/test 112/41/77 (không phải 118/36/75), ảnh 640x480 (không phải 640x360), thêm S04b vào test RoCoG.
+    - **Số liệu thành phần (đo lại hôm nay, chi tiết ở [KET_QUA_HUAN_LUYEN.md](KET_QUA_HUAN_LUYEN.md)):**
+      YOLO trên **tập test 1.044 ảnh** (trước đây chỉ có validation): precision 0,847, recall 0,764, mAP50 0,859, mAP50-95 0,537; validation 0,856 / 0,721 / 0,828 / 0,515.
+      MediaPipe (không train) trên 314 video: frame có pose dùng được 99,96% trung bình, thấp nhất 96,7%. DD-Net: 145.701 tham số, ~1,4 ms mỗi cửa sổ trên 1 luồng CPU.
+    - **Cập nhật `BAO_CAO_HUAN_LUYEN.md` và `README.md`** theo model 5 lớp `v3_5cls` (trước đó là số liệu model 7 lớp cũ, xem mục 24).
+    - Đánh giá YOLO dùng yaml tạm trong thư mục scratchpad, vì `data.yaml` gốc của `Merged_Human_Dataset` trỏ tới `/media/itvkist/...` (máy khác). Việc chạy tạo
+      `labels/test.cache` (đã xoá) và ghi lại `labels/valid.cache` (cache của Ultralytics, vô hại).
+    - **Đã sửa:** `KEYPOINT_DIR` mặc định trong `gesture/config.py` từ `data/keypoints` (bản RoCoG 7 lớp cũ) sang `data/keypoints_v3`. Bản copy `config.py` trong gói ROS không dùng đường dẫn này nên không đổi.
+      `ANNOTATION_DIR` và `DATASET_ROOT` mặc định vẫn là `Dataset/real_ground`; dùng `Dataset_Used` thì truyền `--ann-dir`.
+
 ## Trạng thái hiện tại
 
 - [x] ROS 2 Jazzy cài xong; thư viện Python nằm trong venv `~/gesture_venv`
@@ -375,6 +420,11 @@ human_detect/
 - [x] Làm sạch dataset robot (230 clip), bỏ lớp None/FollowMe, sửa `person_crop.py`, chia theo người (mục 21)
 - [x] Trích keypoint vào `keypoints_v2/`; loại clip `S14 MoveInReverse take03` (ok=0,027) sang `rejected/` (mục 21)
 - [x] Train `v2_5cls`, `all_test` acc 99,1%; đã chép `best.pt` thành `models/ddnet_gesture.pt` (mục 21, 28)
+- [x] Thay bộ MoveForward, train `v3_5cls`: val 98,1%, `all_test` 100% (105 video); đã chép thành `models/ddnet_gesture.pt` (mục 29)
+- [x] Xếp dataset đúng cấu trúc code đọc (`Dataset_Used/`), viết lại `DATASET_ROBOT.md`, `KET_QUA_HUAN_LUYEN.md`, `BAO_CAO_HUAN_LUYEN.md`, `README.md` (mục 31)
+- [x] Đổi `KEYPOINT_DIR` mặc định trong `gesture/config.py` sang `data/keypoints_v3` (mục 31)
+- [ ] Quay thêm MoveForward của S13, S14 (hoặc người mới) và đánh giá `v2`, `v3` trên cùng một tập test
+- [ ] Đo lại FPS/CPU toàn pipeline với model `v3` (số ~10 FPS trong báo cáo là của model 7 lớp cũ)
 - [ ] Chạy thử code sau khi chia lại thư mục: `python -m training...` / `apps...` (mục 25) và `colcon build` + `gesture.launch.py` (mục 26)
 - [x] Viết `docs/INTERFACE.md` cho web/backend (mục 27); [ ] báo nhóm web/backend dùng bảng số hiệu 0–5 mới
 - [x] Phía robot: tắt khoá người chủ, `lock_gesture` mặc định `Right` (mục 22)

@@ -20,9 +20,13 @@ Sửa ở đây thì phải đồng bộ sang đó.
 ## Lệnh thường dùng
 
 ```bash
-python -m training.extract_keypoints --splits train val test
-python -m training.train_ddnet --mode scratch --name scratch_f16
-python -m training.evaluate_ddnet --ckpt checkpoints/scratch_f16/best.pt --split test
+A=../Dataset/Dataset_Used      # 316 video model dùng: train 158, val 53, test 105
+python -m training.extract_keypoints --splits all_train all_val all_test --device 0 \
+    --ann-dir $A/annotations --dataset-root $A --out-dir data/keypoints_v3
+python -m training.train_ddnet --mode scratch --train-splits all_train --val-split all_val \
+    --ann-dir $A/annotations --kp-dir data/keypoints_v3 --name v3_5cls --device cuda
+python -m training.evaluate_ddnet --ckpt checkpoints/v3_5cls/best.pt --split all_test \
+    --ann-dir $A/annotations --kp-dir data/keypoints_v3
 python -m apps.demo_camera --ckpt checkpoints/v3_5cls/best.pt
 python -m apps.robot_control --ckpt checkpoints/v3_5cls/best.pt --backend print --show
 ```

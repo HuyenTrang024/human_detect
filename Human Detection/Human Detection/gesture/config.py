@@ -17,7 +17,7 @@ DATASET_ROOT = WORKSPACE_DIR / "Dataset"
 ANNOTATION_DIR = DATASET_ROOT / "real_ground" / "annotations"
 
 # Nơi extract_keypoints.py ghi file .npz (mỗi video một file)
-KEYPOINT_DIR = PROJECT_DIR / "data" / "keypoints"
+KEYPOINT_DIR = PROJECT_DIR / "data" / "keypoints_v3"   # lần trích cho model 5 lớp hiện tại (data/keypoints là bản 7 lớp cũ)
 
 # Nơi train_ddnet.py ghi checkpoint, log
 CHECKPOINT_DIR = PROJECT_DIR / "checkpoints"
